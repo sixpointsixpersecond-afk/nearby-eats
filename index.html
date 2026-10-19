@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>附近吃什麼</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --accent: #e8622c;
+    --accent2: #ffb648;
+    --bg: #fafaf8;
+    --card: #ffffff;
+    --text: #2a2a2a;
+    --muted: #767676;
+    --grad1: #fff6ec;
+    --grad2: #fafaf8;
+    --grad3: #fdece0;
+    --dot: rgba(232, 98, 44, 0.07);
+    --chip-bg: #fff1e6;
+    --chip-border: #ffd9b8;
+    --loader-track: #e0cfc3;
+  }
+  :root[data-theme="dark"] {
+    --accent: #ff8a5c;
+    --accent2: #ffc26a;
+    --bg: #1c1b22;
+    --card: #2a2832;
+    --text: #f1ede7;
+    --muted: #ada6b0;
+    --grad1: #231f2a;
+    --grad2: #1c1b22;
+    --grad3: #26202a;
+    --dot: rgba(255, 138, 92, 0.08);
+    --chip-bg: #3a2f30;
+    --chip-border: #54403a;
+    --loader-track: #44393d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(var(--dot) 2px, transparent 2px) 0 0/26px 26px,
+      linear-gradient(160deg, var(--grad1) 0%, var(--grad2) 55%, var(--grad3) 100%);
+    color: var(--text);
+    font-family: -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px;
+    transition: background 0.3s ease, color 0.3s ease;
+  }
+  .wrap { width: 100%; max-width: 420px; }
+  .theme-toggle {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--card);
+    color: var(--text);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: none;
+    z-index: 10;
+  }
+  .title-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .title-row .deco { font-size: 26px; }
+  h1 {
+    font-family: 'Baloo 2', -apple-system, "PingFang TC", "Noto Sans TC", sans-serif;
+    text-align: center;
+    font-size: 27px;
+    margin-bottom: 4px;
+  }
+  .sub {
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 28px;
+  }
+  .status {
+    text-align: center;
+    color: var(--muted);
+    font-size: 15px;
+    margin: 20px 0;
+    min-height: 20px;
+  }
+  button {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    cursor: pointer;
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+  button:active { opacity: 0.85; transform: scale(0.97); }
+  button.secondary {
+    background: transparent;
+    color: var(--accent);
+    border: 2px solid var(--accent);
+  }
+  .card {
+    background: var(--card);
+    border-radius: 18px;
+    padding: 28px 24px;
+    box-shadow: 0 10px 30px rgba(232, 98, 44, 0.12);
+    text-align: center;
+    display: none;
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .card.show { display: block; }
+  .card.show.in { opacity: 1; transform: translateY(0) scale(1); }
+  .card .icon {
+    font-size: 42px;
+    margin-bottom: 4px;
+  }
+  .card .name {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    transition: opacity 0.2s ease;
+  }
+  .card .meta {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 20px;
+    transition: opacity 0.2s ease;
+  }
+  .card.fading .name,
+  .card.fading .meta { opacity: 0; }
+  .card a.nav-link {
+    display: block;
+    text-decoration: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    padding: 12px;
+    border-radius: 10px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  .spacer { height: 12px; }
+  .recent {
+    margin-top: 20px;
+  }
+  .recent .label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .recent .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+  }
+  .recent .chip {
+    background: var(--chip-bg);
+    color: var(--accent);
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--chip-border);
+  }
+  .loader {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--loader-track);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" aria-label="切換深色模式">🌙</button>
+<div class="wrap">
+  <div class="title-row">
+    <span class="deco">🍜</span>
+    <h1>附近吃什麼</h1>
+    <span class="deco">😋</span>
+  </div>
+  <div class="sub">走路五分鐘內,隨機選一家</div>
+
+  <div id="status" class="status"></div>
+
+  <button id="startBtn">開始尋找</button>
+
+  <div id="card" class="card">
+    <div class="icon" id="r-icon"></div>
+    <div class="name" id="r-name"></div>
+    <div class="meta" id="r-meta"></div>
+    <a id="r-link" class="nav-link" target="_blank" rel="noopener">開始步行導航</a>
+    <button id="rerollBtn" class="secondary">換一家</button>
+  </div>
+
+  <div class="recent" id="recentBox" style="display:none;">
+    <div class="label">最近看過</div>
+    <div class="chips" id="recentChips"></div>
+  </div>
+</div>
+
+<script>
+  const startBtn = document.getElementById('startBtn');
+  const statusEl = document.getElementById('status');
+  const card = document.getElementById('card');
+  const rerollBtn = document.getElementById('rerollBtn');
+
+  let userLat, userLon;
+  let candidates = [];       // 這次搜尋到的所有餐廳
+  let lastRadius = 400;      // 記住目前用的搜尋半徑,擴大搜尋時會用到
+
+  const WALK_SPEED_M_PER_MIN = 80; // 平均走路速度估算值
+  const RECENT_LIMIT = 5;          // 最多記住幾家最近抽過的店
+
+  const AMENITY_ICON = {
+    restaurant: '🍽️',
+    fast_food: '🍔',
+    cafe: '☕'
+  };
+
+  // 最近抽過的紀錄存在 localStorage,重新整理頁面也還記得
+  // (每個瀏覽器各自儲存,不會跟其他人共用,讀寫都包一層防護避免私密瀏覽模式出錯)
+  function loadRecent() {
+    try {
+      const raw = localStorage.getItem('nearbyEats_recent');
+      return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveRecent(list) {
+    try {
+      localStorage.setItem('nearbyEats_recent', JSON.stringify(list));
+    } catch (e) {
+      // 私密瀏覽模式或儲存被擋就略過,不影響主功能
+    }
+  }
+
+  let recent = loadRecent();
+
+  function addToRecent(pick) {
+    recent = recent.filter(r => r.id !== pick.id);
+    recent.unshift({ id: pick.id, name: pick.tags.name });
+    recent = recent.slice(0, RECENT_LIMIT);
+    saveRecent(recent);
+    renderRecent();
+  }
+
+  function renderRecent() {
+    const box = document.getElementById('recentBox');
+    const chips = document.getElementById('recentChips');
+    if (recent.length === 0) {
+      box.style.display = 'none';
+      return;
+    }
+    box.style.display = 'block';
+    chips.innerHTML = '';
+    recent.forEach(r => {
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.textContent = r.name;
+      chips.appendChild(chip);
+    });
+  }
+
+  renderRecent();
+
+  // 深色模式:記住使用者上次的選擇,下次打開網頁直接套用
+  const themeToggle = document.getElementById('themeToggle');
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    themeToggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+
+  function loadTheme() {
+    try {
+      return localStorage.getItem('nearbyEats_theme') || 'light';
+    } catch (e) {
+      return 'light';
+    }
+  }
+
+  function saveTheme(theme) {
+    try {
+      localStorage.setItem('nearbyEats_theme', theme);
+    } catch (e) {
+      // 私密瀏覽模式存不了就算了,不影響功能
+    }
+  }
+
+  applyTheme(loadTheme());
+
+  themeToggle.addEventListener('click', () => {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    saveTheme(next);
+  });
+
+  startBtn.addEventListener('click', startSearch);
+  rerollBtn.addEventListener('click', () => showRandomPick());
+
+  function startSearch() {
+    setLoadingStatus('正在定位您的位置...');
+    startBtn.style.display = 'none';
+    card.classList.remove('show', 'in');
+
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        userLat = pos.coords.latitude;
+        userLon = pos.coords.longitude;
+        lastRadius = 400;
+        searchNearby(lastRadius);
+      },
+      err => {
+        if (err.code === err.PERMISSION_DENIED) {
+          showRetry('需要允許定位才能找到附近餐廳。');
+        } else {
+          showRetry('定位失敗,請確認已開啟 GPS 並再試一次。');
+        }
+      },
+      { timeout: 10000 }
+    );
+  }
+
+  // Overpass 公開伺服器常常忙線或單點逾時,準備幾個鏡像站輪流試
+  const OVERPASS_MIRRORS = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass.openstreetmap.ru/api/interpreter'
+  ];
+
+  function searchNearby(radius) {
+    setLoadingStatus('正在尋找附近餐廳...');
+
+    const query = `[out:json][timeout:20];(` +
+      `node["amenity"="restaurant"](around:${radius},${userLat},${userLon});` +
+      `node["amenity"="fast_food"](around:${radius},${userLat},${userLon});` +
+      `node["amenity"="cafe"](around:${radius},${userLat},${userLon});` +
+      `);out body;`;
+
+    tryMirror(0, query, radius);
+  }
+
+  function tryMirror(mirrorIndex, query, radius) {
+    if (mirrorIndex >= OVERPASS_MIRRORS.length) {
+      showRetry('連線逾時或失敗,請再試一次。');
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+    fetch(OVERPASS_MIRRORS[mirrorIndex], {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'data=' + encodeURIComponent(query),
+      signal: controller.signal
+    })
+      .then(res => {
+        clearTimeout(timeoutId);
+        if (!res.ok) throw new Error('API 回應異常');
+        return res.json();
+      })
+      .then(data => {
+        candidates = (data.elements || []).filter(el => el.tags && el.tags.name);
+        if (candidates.length === 0) {
+          if (radius < 800) {
+            showExpandOption();
+          } else {
+            showRetry('附近真的找不到餐廳,換個地方再試試吧。');
+          }
+        } else {
+          showRandomPick();
+        }
+      })
+      .catch(() => {
+        clearTimeout(timeoutId);
+        // 這個鏡像站失敗就換下一個,不直接判定整體失敗
+        tryMirror(mirrorIndex + 1, query, radius);
+      });
+  }
+
+  function showRandomPick() {
+    // 先排除最近抽過的店,避免短時間內一直抽到同一家;
+    // 如果附近店家本來就很少、全部都在最近名單裡,就不排除直接從全部裡抽
+    const recentIds = new Set(recent.map(r => r.id));
+    let pool = candidates.filter(c => !recentIds.has(c.id));
+    if (pool.length === 0) pool = candidates;
+
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    const dist = distanceMeters(userLat, userLon, pick.lat, pick.lon);
+    const minutes = Math.max(1, Math.round(dist / WALK_SPEED_M_PER_MIN));
+    const icon = AMENITY_ICON[pick.tags.amenity] || '🍴';
+
+    const applyContent = () => {
+      document.getElementById('r-icon').textContent = icon;
+      document.getElementById('r-name').textContent = pick.tags.name;
+      document.getElementById('r-meta').textContent =
+        `約 ${Math.round(dist)} 公尺,走路約 ${minutes} 分鐘`;
+      document.getElementById('r-link').href =
+        `https://www.google.com/maps/dir/?api=1&destination=${pick.lat},${pick.lon}&travelmode=walking`;
+      card.classList.remove('fading');
+    };
+
+    setStatus('');
+
+    if (card.classList.contains('in')) {
+      // 卡片已經顯示過(換一家的情況):文字先淡出再換內容淡入,比直接跳變柔和
+      card.classList.add('fading');
+      setTimeout(() => { applyContent(); }, 180);
+    } else {
+      applyContent();
+    }
+
+    card.classList.add('show');
+    requestAnimationFrame(() => card.classList.add('in'));
+
+    addToRecent(pick);
+  }
+
+  function showExpandOption() {
+    setStatus('五分鐘內找不到餐廳。');
+    renderActionButton('擴大搜尋範圍(約 10 分鐘)', () => {
+      lastRadius = 800;
+      searchNearby(lastRadius);
+    });
+  }
+
+  function showRetry(message) {
+    setStatus(message);
+    renderActionButton('重新嘗試', () => {
+      removeActionButton();
+      startSearch();
+    });
+  }
+
+  function renderActionButton(label, onClick) {
+    removeActionButton();
+    const btn = document.createElement('button');
+    btn.id = 'actionBtn';
+    btn.textContent = label;
+    btn.addEventListener('click', onClick);
+    statusEl.insertAdjacentElement('afterend', btn);
+  }
+
+  function removeActionButton() {
+    const old = document.getElementById('actionBtn');
+    if (old) old.remove();
+  }
+
+  function setStatus(text) {
+    statusEl.textContent = text;
+  }
+
+  // 搜尋中的狀態加個小轉圈動畫,比純文字更看得出「正在跑」
+  function setLoadingStatus(text) {
+    statusEl.innerHTML = '<span class="loader"></span>' + text;
+  }
+
+  // Haversine 公式:算兩個經緯度之間的直線距離(公尺)
+  function distanceMeters(lat1, lon1, lat2, lon2) {
+    const R = 6371000;
+    const toRad = x => (x * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+</script>
+</body>
+</html>
